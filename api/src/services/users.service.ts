@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { LoginDto } from 'src/entities/login.dto';
-import { User } from 'src/entities/user.entity';
+import { Login } from 'src/entities/login';
+import { User } from 'src/entities/user';
 
 @Injectable()
 export class UsersService {
@@ -34,7 +34,7 @@ export class UsersService {
     return this.users.find((u) => u.email === email);
   }
 
-  async validateCredentials(dto: LoginDto): Promise<User> {
+  async validateCredentials(dto: Login): Promise<User> {
     const user = this.findByEmail(dto.email);
 
     if (!user) throw new UnauthorizedException('Credenciales inválidas');

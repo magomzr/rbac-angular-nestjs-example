@@ -14,11 +14,8 @@ import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { PermissionsGuard } from 'src/guards/permissions.guard';
 import { Perm } from 'src/config/roles.config';
 import { RequirePerms } from 'src/decorators/permissions.decorator';
-import { CreateElementDto } from 'src/entities/create-element.dto';
-import { UpdateElementDto } from 'src/entities/update-element.dto';
+import { CreateElementDto, UpdateElementDto } from 'src/entities/element';
 
-// Si usás APP_GUARD global en AppModule podés quitar el @UseGuards de acá.
-// Lo dejamos explícito para que sea claro qué protege cada controller.
 @Controller('elements')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ElementsController {
@@ -39,7 +36,8 @@ export class ElementsController {
   @Post()
   @RequirePerms(Perm.INSERT)
   create(@Body() dto: CreateElementDto, @Request() req: any) {
-    // req.user viene de JwtStrategy.validate()
+    // req.user.sub represents the userId, so that we can associate
+    // the created element with the user that created it.
     return this.service.create(dto, req.user.sub);
   }
 
@@ -49,8 +47,12 @@ export class ElementsController {
     return this.service.update(id, dto);
   }
 
+  // In this case, we want to allow both updating and inserting
+  // permissions to publish an element. We can handle both a
+  // single permission or an array of permissions
+  // in the @RequirePerms decorator.
   @Post(':id/publish')
-  @RequirePerms(Perm.UPDATE, Perm.INSERT) // requiere ambos
+  @RequirePerms(Perm.UPDATE, Perm.INSERT)
   publish(@Param('id') id: string) {
     return this.service.publish(id);
   }

@@ -2,16 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ROLE_PERMISSIONS } from 'src/config/roles.config';
 import { UsersService } from './users.service';
-import { LoginDto } from 'src/entities/login.dto';
+import { Login } from 'src/entities/login';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private jwt: JwtService,
-    private users: UsersService,
+    private readonly jwt: JwtService,
+    private readonly users: UsersService,
   ) {}
 
-  async login(dto: LoginDto) {
+  async login(dto: Login) {
     const user = await this.users.validateCredentials(dto);
 
     // Roles del usuario (pueden ser varios)

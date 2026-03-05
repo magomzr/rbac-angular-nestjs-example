@@ -1,13 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Element } from '../entities/element.entity';
-import { randomUUID } from 'crypto';
-import { CreateElementDto } from 'src/entities/create-element.dto';
-import { UpdateElementDto } from 'src/entities/update-element.dto';
+import { randomUUID } from 'node:crypto';
+import {
+  Element,
+  CreateElementDto,
+  UpdateElementDto,
+} from 'src/entities/element';
 
 @Injectable()
 export class ElementsService {
-  // En producción: repositorio TypeORM/Prisma
-  private elements: Element[] = [
+  private readonly elements: Element[] = [
     {
       id: '1',
       name: 'Element Alpha',

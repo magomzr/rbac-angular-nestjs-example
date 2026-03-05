@@ -3,6 +3,6 @@ import { UsersService } from 'src/services/users.service';
 
 @Module({
   providers: [UsersService],
-  exports: [UsersService], // AuthModule lo necesita
+  exports: [UsersService],
 })
 export class UsersModule {}
