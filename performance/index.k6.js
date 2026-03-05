@@ -1,10 +1,10 @@
 const TOKENS = {
   admin:
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwibmFtZSI6IkJvYiIsInBlcm1pc3Npb25zIjpbImluc2VydDplbGVtZW50IiwidXBkYXRlOmVsZW1lbnQiLCJkZWxldGU6ZWxlbWVudCIsInJlYWQ6ZWxlbWVudCJdLCJpYXQiOjE3NzI2ODYyODEsImV4cCI6MTc3MjcxNTA4MX0.Hi5dWoJpwGy8_sbMCQtafbjy71FpHPxZrHGDbrxrc2M",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwibmFtZSI6IkJvYiIsInBlcm1pc3Npb25zIjpbImluc2VydDplbGVtZW50IiwidXBkYXRlOmVsZW1lbnQiLCJkZWxldGU6ZWxlbWVudCIsInJlYWQ6ZWxlbWVudCJdLCJpYXQiOjE3NzI3MjM0NjUsImV4cCI6MTc3Mjc1MjI2NX0.9O1Hy-lIF_zMvWnRTKPW_MOVzUladeVl1e9RD2z-ulo",
   editor:
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwibmFtZSI6IkNoYXJsaWUiLCJwZXJtaXNzaW9ucyI6WyJpbnNlcnQ6ZWxlbWVudCIsInVwZGF0ZTplbGVtZW50IiwicmVhZDplbGVtZW50Il0sImlhdCI6MTc3MjY4NjI5MiwiZXhwIjoxNzcyNzE1MDkyfQ.62gOKRcwvaUF6pWu7JGKo7c35Gx5hbnyl3D8BfbBpXE",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwibmFtZSI6IkNoYXJsaWUiLCJwZXJtaXNzaW9ucyI6WyJpbnNlcnQ6ZWxlbWVudCIsInVwZGF0ZTplbGVtZW50IiwicmVhZDplbGVtZW50Il0sImlhdCI6MTc3MjcyMzQ4MywiZXhwIjoxNzcyNzUyMjgzfQ.qyoendjbwLArWzvFWfPjWpLFkDZa2A7_vao-28cmyMg",
   viewer:
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwibmFtZSI6IkRhbmEiLCJwZXJtaXNzaW9ucyI6WyJyZWFkOmVsZW1lbnQiXSwiaWF0IjoxNzcyNjg2MzAzLCJleHAiOjE3NzI3MTUxMDN9.Yk8feiLv9-snL9RXMFCrot0gz1joaLQywl3ZtozXjmU",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwibmFtZSI6IkRhbmEiLCJwZXJtaXNzaW9ucyI6WyJyZWFkOmVsZW1lbnQiXSwiaWF0IjoxNzcyNzIzNDk5LCJleHAiOjE3NzI3NTIyOTl9.NvY8vk5QvAbipB2CDAV89w8CtYpKR6N8JwPzHS0a3jc",
 };
 
 import http from "k6/http";
@@ -89,10 +89,15 @@ export default function (data) {
 
   group(`${cas.method} as ${role}`, () => {
     const start = Date.now();
-    const res = http.request(cas.method, `${BASE}${cas.path}`, cas.body ?? null, {
-      headers: HEADERS(role),
-      responseCallback: http.expectedStatuses(200, 201, 403),
-    });
+    const res = http.request(
+      cas.method,
+      `${BASE}${cas.path}`,
+      cas.body ?? null,
+      {
+        headers: HEADERS(role),
+        responseCallback: http.expectedStatuses(200, 201, 403),
+      },
+    );
     guardLatency.add(Date.now() - start);
 
     if (res.status === 200) s200.add(1);
@@ -100,7 +105,9 @@ export default function (data) {
     else sOther.add(1);
 
     if (res.status !== expectedStatus) {
-      console.warn(`FALLO: ${role} ${cas.method} → got ${res.status} | error: ${res.error}`);
+      console.warn(
+        `FALLO: ${role} ${cas.method} → got ${res.status} | error: ${res.error}`,
+      );
     }
 
     check(res, {
@@ -121,7 +128,9 @@ export default function (data) {
 }
 
 export function teardown(data) {
-  const res = http.del(`${BASE}/elements/${data.fixtureId}`, null, { headers: HEADERS("admin") });
+  const res = http.del(`${BASE}/elements/${data.fixtureId}`, null, {
+    headers: HEADERS("admin"),
+  });
   console.log(`fixture eliminado — status: ${res.status}`);
 }
 
@@ -132,7 +141,9 @@ export function handleSummary(data) {
   const latencyAvg = data.metrics.guard_latency_ms?.values?.["avg"] ?? 0;
   const totalReqs = data.metrics.http_reqs?.values?.count ?? 0;
   const failRate = data.metrics.http_req_failed?.values?.rate ?? 0;
-  const correctness = forbidden ? ((1 - forbidden.rate) * 100).toFixed(2) : "N/A";
+  const correctness = forbidden
+    ? ((1 - forbidden.rate) * 100).toFixed(2)
+    : "N/A";
   const n200 = data.metrics.status_200?.values?.count ?? 0;
   const n403 = data.metrics.status_403?.values?.count ?? 0;
   const nOther = data.metrics.status_other?.values?.count ?? 0;
@@ -154,6 +165,5 @@ export function handleSummary(data) {
 ║  Otros (inesperado): ${String(nOther).padEnd(20)}║
 ╚══════════════════════════════════════════╝
     `,
-    "summary.json": JSON.stringify(data, null, 2),
   };
 }
