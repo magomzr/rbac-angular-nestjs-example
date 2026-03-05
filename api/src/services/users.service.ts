@@ -1,0 +1,47 @@
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
+import { LoginDto } from 'src/entities/login.dto';
+import { User } from 'src/entities/user.entity';
+
+@Injectable()
+export class UsersService {
+  // En producción esto sería tu repositorio de TypeORM/Prisma
+  private readonly users: User[] = [
+    {
+      id: '1',
+      name: 'Bob',
+      email: 'bob@test.com',
+      password: bcrypt.hashSync('secret123', 10),
+      roles: ['admin'],
+    },
+    {
+      id: '2',
+      name: 'Charlie',
+      email: 'charlie@test.com',
+      password: bcrypt.hashSync('secret123', 10),
+      roles: ['editor'],
+    },
+    {
+      id: '3',
+      name: 'Dana',
+      email: 'dana@test.com',
+      password: bcrypt.hashSync('secret123', 10),
+      roles: ['viewer'],
+    },
+  ];
+
+  findByEmail(email: string): User | undefined {
+    return this.users.find((u) => u.email === email);
+  }
+
+  async validateCredentials(dto: LoginDto): Promise<User> {
+    const user = this.findByEmail(dto.email);
+
+    if (!user) throw new UnauthorizedException('Credenciales inválidas');
+
+    const match = await bcrypt.compare(dto.password, user.password);
+    if (!match) throw new UnauthorizedException('Credenciales inválidas');
+
+    return user;
+  }
+}

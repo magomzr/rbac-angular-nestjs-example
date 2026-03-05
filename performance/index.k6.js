@@ -1,0 +1,159 @@
+const TOKENS = {
+  admin:
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwibmFtZSI6IkJvYiIsInBlcm1pc3Npb25zIjpbImluc2VydDplbGVtZW50IiwidXBkYXRlOmVsZW1lbnQiLCJkZWxldGU6ZWxlbWVudCIsInJlYWQ6ZWxlbWVudCJdLCJpYXQiOjE3NzI2ODYyODEsImV4cCI6MTc3MjcxNTA4MX0.Hi5dWoJpwGy8_sbMCQtafbjy71FpHPxZrHGDbrxrc2M",
+  editor:
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwibmFtZSI6IkNoYXJsaWUiLCJwZXJtaXNzaW9ucyI6WyJpbnNlcnQ6ZWxlbWVudCIsInVwZGF0ZTplbGVtZW50IiwicmVhZDplbGVtZW50Il0sImlhdCI6MTc3MjY4NjI5MiwiZXhwIjoxNzcyNzE1MDkyfQ.62gOKRcwvaUF6pWu7JGKo7c35Gx5hbnyl3D8BfbBpXE",
+  viewer:
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwibmFtZSI6IkRhbmEiLCJwZXJtaXNzaW9ucyI6WyJyZWFkOmVsZW1lbnQiXSwiaWF0IjoxNzcyNjg2MzAzLCJleHAiOjE3NzI3MTUxMDN9.Yk8feiLv9-snL9RXMFCrot0gz1joaLQywl3ZtozXjmU",
+};
+
+import http from "k6/http";
+import { check, group, sleep } from "k6";
+import { Rate, Trend, Counter } from "k6/metrics";
+
+const forbiddenRate = new Rate("forbidden_rate");
+const guardLatency = new Trend("guard_latency_ms", true);
+const s200 = new Counter("status_200");
+const s403 = new Counter("status_403");
+const sOther = new Counter("status_other");
+
+// ───────────────────────────────────────────────
+
+const BASE = "http://localhost:3000";
+const HEADERS = (role) => ({
+  Authorization: `Bearer ${TOKENS[role]}`,
+  "Content-Type": "application/json",
+});
+
+export const options = {
+  scenarios: {
+    stress: {
+      executor: "ramping-vus",
+      startVUs: 0,
+      stages: [
+        { duration: "15s", target: 20 }, // calentamiento
+        { duration: "30s", target: 50 }, // carga normal
+        { duration: "30s", target: 100 }, // presión
+        { duration: "30s", target: 200 }, // estrés
+        { duration: "15s", target: 0 }, // ramp down
+      ],
+      tags: { scenario: "stress" },
+    },
+  },
+  thresholds: {
+    guard_latency_ms: ["p(99)<500"], // más holgado bajo estrés
+    forbidden_rate: ["rate<0.01"],
+    http_req_failed: ["rate<0.01"],
+    http_req_duration: ["p(95)<2000"],
+  },
+};
+
+export function setup() {
+  const res = http.post(
+    `${BASE}/elements`,
+    JSON.stringify({ name: "Fixture k6", description: "seed para el test" }),
+    { headers: HEADERS("admin") },
+  );
+
+  if (res.status !== 201) {
+    throw new Error(`setup falló: ${res.status} ${res.body}`);
+  }
+
+  const fixtureId = res.json("id");
+  console.log(`fixture creado con id: ${fixtureId}`);
+  return { fixtureId };
+}
+
+export default function (data) {
+  const { fixtureId } = data;
+
+  const roles = ["admin", "editor", "viewer"];
+  const role = roles[Math.floor(Math.random() * roles.length)];
+
+  const CASES = [
+    {
+      method: "GET",
+      path: `/elements/${fixtureId}`,
+      expect: { admin: 200, editor: 200, viewer: 200 },
+    },
+    {
+      method: "PATCH",
+      path: `/elements/${fixtureId}`,
+      body: JSON.stringify({ name: "Updated by k6" }),
+      expect: { admin: 200, editor: 200, viewer: 403 },
+    },
+  ];
+
+  const cas = CASES[Math.floor(Math.random() * CASES.length)];
+  const expectedStatus = cas.expect[role];
+
+  group(`${cas.method} as ${role}`, () => {
+    const start = Date.now();
+    const res = http.request(cas.method, `${BASE}${cas.path}`, cas.body ?? null, {
+      headers: HEADERS(role),
+      responseCallback: http.expectedStatuses(200, 201, 403),
+    });
+    guardLatency.add(Date.now() - start);
+
+    if (res.status === 200) s200.add(1);
+    else if (res.status === 403) s403.add(1);
+    else sOther.add(1);
+
+    if (res.status !== expectedStatus) {
+      console.warn(`FALLO: ${role} ${cas.method} → got ${res.status} | error: ${res.error}`);
+    }
+
+    check(res, {
+      [`${role} → ${expectedStatus}`]: (r) => r.status === expectedStatus,
+      "sin error de red": (r) => r.status !== 0,
+      "no privilege escalation": (r) =>
+        !(role === "viewer" && cas.method !== "GET" && r.status !== 403),
+    });
+
+    if (expectedStatus === 403) {
+      forbiddenRate.add(res.status !== 403);
+    } else {
+      forbiddenRate.add(res.status === 403);
+    }
+  });
+
+  sleep(0.5);
+}
+
+export function teardown(data) {
+  const res = http.del(`${BASE}/elements/${data.fixtureId}`, null, { headers: HEADERS("admin") });
+  console.log(`fixture eliminado — status: ${res.status}`);
+}
+
+export function handleSummary(data) {
+  const forbidden = data.metrics.forbidden_rate?.values;
+  const latencyP99 = data.metrics.guard_latency_ms?.values?.["p(99)"] ?? 0;
+  const latencyP95 = data.metrics.guard_latency_ms?.values?.["p(95)"] ?? 0;
+  const latencyAvg = data.metrics.guard_latency_ms?.values?.["avg"] ?? 0;
+  const totalReqs = data.metrics.http_reqs?.values?.count ?? 0;
+  const failRate = data.metrics.http_req_failed?.values?.rate ?? 0;
+  const correctness = forbidden ? ((1 - forbidden.rate) * 100).toFixed(2) : "N/A";
+  const n200 = data.metrics.status_200?.values?.count ?? 0;
+  const n403 = data.metrics.status_403?.values?.count ?? 0;
+  const nOther = data.metrics.status_other?.values?.count ?? 0;
+
+  return {
+    stdout: `
+╔══════════════════════════════════════════╗
+║          RBAC Stress Test Summary        ║
+╠══════════════════════════════════════════╣
+║  Guard correctness : ${String(correctness + "%").padEnd(20)}║
+║  Guard avg latency : ${String(latencyAvg.toFixed(2) + "ms").padEnd(20)}║
+║  Guard p95 latency : ${String(latencyP95.toFixed(2) + "ms").padEnd(20)}║
+║  Guard p99 latency : ${String(latencyP99.toFixed(2) + "ms").padEnd(20)}║
+║  Total requests    : ${String(totalReqs).padEnd(20)}║
+║  HTTP fail rate    : ${String((failRate * 100).toFixed(2) + "%").padEnd(20)}║
+╠══════════════════════════════════════════╣
+║  200 OK            : ${String(n200).padEnd(20)}║
+║  403 Forbidden     : ${String(n403).padEnd(20)}║
+║  Otros (inesperado): ${String(nOther).padEnd(20)}║
+╚══════════════════════════════════════════╝
+    `,
+    "summary.json": JSON.stringify(data, null, 2),
+  };
+}
