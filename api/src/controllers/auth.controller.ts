@@ -5,7 +5,7 @@ import { AuthService } from 'src/services/auth.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Public() // no requiere JWT
   @Post('login')

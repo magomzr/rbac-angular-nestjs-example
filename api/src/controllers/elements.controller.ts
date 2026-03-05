@@ -38,7 +38,7 @@ export class ElementsController {
 
   @Post()
   @RequirePerms(Perm.INSERT)
-  create(@Body() dto: CreateElementDto, @Request() req) {
+  create(@Body() dto: CreateElementDto, @Request() req: any) {
     // req.user viene de JwtStrategy.validate()
     return this.service.create(dto, req.user.sub);
   }

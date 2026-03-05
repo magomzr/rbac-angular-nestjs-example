@@ -1,0 +1,33 @@
+.container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0a0f;
+    color: #e8e8f0;
+    font-family: 'Syne', sans-serif;
+    flex-direction: column;
+    gap: 1rem
+}
+
+.button {
+    padding: 8px 20px;
+    border-radius: 6px;
+    border: 1px solid #7c6aff;
+    background: transparent;
+    color: #7c6aff;
+    cursor: pointer"
+
+}
+
+.title {
+    font-size: 3rem;
+}
+
+.subtitle {
+    font-size: 1.5rem
+}
+
+.text {
+    color: #6b6b80
+}
