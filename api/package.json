@@ -1,8 +1,8 @@
 {
   "name": "rbac-backend",
-  "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "version": "1.0.0",
+  "description": "Simple RBAC implementation using NestJS with permission strings",
+  "author": "Mario Gomez",
   "private": true,
   "packageManager": "pnpm@10.24.0",
   "license": "UNLICENSED",

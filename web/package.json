@@ -1,6 +1,8 @@
 {
   "name": "rbac-frontend",
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Simple RBAC implementation using Angular with permission strings",
+  "author": "Mario Gomez",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
