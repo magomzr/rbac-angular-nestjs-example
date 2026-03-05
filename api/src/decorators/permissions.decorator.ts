@@ -19,6 +19,7 @@
 // Fast store, fast access.
 // This metadata will be later read by the PermissionsGuard to check if the
 // user has the required permissions to access.
+
 import { SetMetadata } from '@nestjs/common';
 
 export const PERMISSIONS_KEY = 'permissions';

@@ -16,6 +16,9 @@
 
 // AI suggests between 1 to 5 permissions per endpoint, so it's okay.
 
+// However, the check if the user has a specific permission is O(1) because we stored the permissions
+// in a Set in the JwtStrategy. So O(n x 1) = O(n) at the end.
+
 import {
   CanActivate,
   ExecutionContext,

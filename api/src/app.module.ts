@@ -1,3 +1,11 @@
+// Root module of the app.
+// ConfigModule is registered with isGlobal: true, so we can inject ConfigService anywhere
+// without importing the module again. It's global, of course.
+
+// The providers array is where we register GLOBAL guards. The order matters because they
+// are executed in order, so we want JwtAuthGuard to run before PermissionsGuard (first
+// verify JWT, then permissions).
+
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './modules/auth.module';
@@ -8,13 +16,11 @@ import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }), // ← isGlobal evita importarlo en cada módulo
+    ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,
     ElementsModule,
   ],
   providers: [
-    // Guardias globales — aplican a TODA la app
-    // El orden importa: primero JWT, luego permisos
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
   ],

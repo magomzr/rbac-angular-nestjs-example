@@ -1,3 +1,10 @@
+// The users service.
+
+// this is a very simple in-memory implementation, but in a real app
+// this would come from a database, like a TypeORM or Prisma repo.
+
+// Again, nothing fancy here.
+
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { Login } from 'src/entities/login';
@@ -37,10 +44,10 @@ export class UsersService {
   async validateCredentials(dto: Login): Promise<User> {
     const user = this.findByEmail(dto.email);
 
-    if (!user) throw new UnauthorizedException('Credenciales inválidas');
+    if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const match = await bcrypt.compare(dto.password, user.password);
-    if (!match) throw new UnauthorizedException('Credenciales inválidas');
+    if (!match) throw new UnauthorizedException('Invalid credentials');
 
     return user;
   }

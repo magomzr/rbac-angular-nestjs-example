@@ -1,3 +1,10 @@
+// The elements service. Of course, this is an in-memory implementation,
+// so if it's necessary to get data from a db, this is the place to get it.
+
+// Nothing special here, just the usual CRUD operations. The only thing is
+// that the `create()` method takes the `userId` as a param, and it comes
+// from the JWT token (request.user.sub) in the controller.
+
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import {
@@ -12,7 +19,7 @@ export class ElementsService {
     {
       id: '1',
       name: 'Element Alpha',
-      description: 'Primer elemento de prueba',
+      description: 'First test element',
       createdBy: '1',
       status: 'published',
       createdAt: new Date(),
@@ -21,7 +28,7 @@ export class ElementsService {
     {
       id: '2',
       name: 'Element Beta',
-      description: 'Segundo elemento de prueba',
+      description: 'Second test element',
       createdBy: '2',
       status: 'draft',
       createdAt: new Date(),
@@ -35,11 +42,10 @@ export class ElementsService {
 
   findOne(id: string): Element {
     const element = this.elements.find((e) => e.id === id);
-    if (!element) throw new NotFoundException(`Element ${id} no encontrado`);
+    if (!element) throw new NotFoundException(`Element ${id} not found`);
     return element;
   }
 
-  // createdBy viene del JWT (request.user.sub), no del body
   create(dto: CreateElementDto, userId: string): Element {
     const element: Element = {
       id: randomUUID(),
@@ -71,8 +77,7 @@ export class ElementsService {
 
   remove(id: string): { deleted: boolean; id: string } {
     const index = this.elements.findIndex((e) => e.id === id);
-    if (index === -1)
-      throw new NotFoundException(`Element ${id} no encontrado`);
+    if (index === -1) throw new NotFoundException(`Element ${id} not found`);
     this.elements.splice(index, 1);
     return { deleted: true, id };
   }
