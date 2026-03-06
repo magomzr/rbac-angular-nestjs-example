@@ -1,3 +1,13 @@
+// This component is the main page of the app. The special part here is that it uses the CanDirective
+// to show or hide buttons based on the user's permissions. It's as simple as adding
+// *appCan="'permission_name'" to any element.
+
+// For instance, the "New" button is written like this:
+// <button *appCan="'insert:element'" class="btn green" (click)="create()">+ New</button>
+
+// This way, any UI object can be protected with the appropiate permission and following any
+// rules previously defined in the backend and sent through the token.
+
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -57,13 +67,13 @@ export class ElementsComponent implements OnInit {
   create() {
     this.http
       .post<Element>(`${this.API}/elements`, {
-        name: `Elemento ${Date.now()}`,
-        description: 'Creado desde Angular',
+        name: `Element ${Date.now()}`,
+        description: 'Created from Angular',
       })
       .subscribe({
         next: (el) => {
           this.elements.update((els) => [...els, el]);
-          this.showFeedback('Elemento creado ✓');
+          this.showFeedback('Element created ✓');
         },
       });
   }
@@ -71,17 +81,17 @@ export class ElementsComponent implements OnInit {
   update() {
     const selected = this.selected();
     if (!selected) {
-      this.showFeedback('Seleccioná un elemento primero');
+      this.showFeedback('Select an element first');
       return;
     }
     this.http
       .patch<Element>(`${this.API}/elements/${selected.id}`, {
-        name: `${selected.name} (editado)`,
+        name: `${selected.name} (edited)`,
       })
       .subscribe({
         next: (updated) => {
           this.elements.update((els) => els.map((e) => (e.id === updated.id ? updated : e)));
-          this.showFeedback('Elemento actualizado ✓');
+          this.showFeedback('Element updated ✓');
         },
       });
   }
@@ -89,14 +99,14 @@ export class ElementsComponent implements OnInit {
   delete() {
     const selected = this.selected();
     if (!selected) {
-      this.showFeedback('Seleccioná un elemento primero');
+      this.showFeedback('Select an element first');
       return;
     }
     this.http.delete(`${this.API}/elements/${selected.id}`).subscribe({
       next: () => {
         this.elements.update((els) => els.filter((e) => e.id !== selected.id));
         this.selected.set(null);
-        this.showFeedback('Elemento eliminado ✓');
+        this.showFeedback('Element deleted ✓');
       },
     });
   }

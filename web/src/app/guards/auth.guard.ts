@@ -1,3 +1,9 @@
+// These are just two simple guards to protect routes.
+// the authGuard checks if the user is logged in, and the
+// permissionGuard checks if the user has a specific permission.
+
+// Nothing special here.
+
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
@@ -8,7 +14,6 @@ export const authGuard: CanActivateFn = () => {
   return auth.isLoggedIn() || router.createUrlTree(['/login']);
 };
 
-// Factory para proteger por permiso específico
 export function permissionGuard(permission: string): CanActivateFn {
   return () => {
     const auth = inject(AuthService);

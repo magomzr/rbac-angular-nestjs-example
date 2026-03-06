@@ -20,7 +20,6 @@ export class AuthService {
   readonly isLoggedIn = computed(() => this._user() !== null);
 
   constructor() {
-    // Restaurar sesión si hay token guardado
     const token = localStorage.getItem('token');
     if (token) this.setToken(token);
   }

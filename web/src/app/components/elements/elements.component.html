@@ -1,44 +1,35 @@
 <div class="layout">
-    <!-- Sidebar -->
     <aside class="sidebar">
-        <div class="brand">RBAC<span>Demo</span></div>
-
+        <div class="brand">RBAC <span>Demo</span></div>
         <div class="user-card">
             <div class="avatar">{{ auth.user()?.name?.[0] }}</div>
             <div>
                 <div class="uname">{{ auth.user()?.name }}</div>
-                <div class="uperms">{{ permCount() }} permisos</div>
+                <div class="uperms">{{ permCount() }} permissions</div>
             </div>
         </div>
-
         <div class="perm-list">
             @for (p of perms(); track p) {
             <span class="perm-chip">{{ p }}</span>
             }
         </div>
-
-        <button class="logout" (click)="logout()">→ Salir</button>
+        <button class="logout" (click)="logout()">→ Logout</button>
     </aside>
-
-    <!-- Main -->
     <main class="main">
-        <!-- Toolbar — cada botón solo existe si tenés el permiso -->
         <div class="toolbar">
-            <h2>Elementos</h2>
+            <h2>Elements</h2>
             <div class="actions">
-                <button *appCan="'insert:element'" class="btn green" (click)="create()">+ Nuevo</button>
-                <button *appCan="'update:element'" class="btn blue" (click)="update()">✎ Editar</button>
+                <button *appCan="'insert:element'" class="btn green" (click)="create()">+ New</button>
+                <button *appCan="'update:element'" class="btn blue" (click)="update()">✎ Edit</button>
                 <button *appCan="'delete:element'" class="btn red" (click)="delete()">
-                    ✕ Eliminar
+                    ✕ Delete
                 </button>
             </div>
         </div>
-
-        <!-- Lista -->
         @if (loading()) {
-        <div class="empty">Cargando...</div>
+        <div class="empty">Loading...</div>
         } @else if (elements().length === 0) {
-        <div class="empty">Sin elementos</div>
+        <div class="empty">No elements</div>
         } @else {
         <div class="list">
             @for (el of elements(); track el.id) {
@@ -52,8 +43,6 @@
             }
         </div>
         }
-
-        <!-- Feedback -->
         @if (feedback()) {
         <div class="feedback">{{ feedback() }}</div>
         }

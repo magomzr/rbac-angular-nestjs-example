@@ -15,7 +15,7 @@ export class LoginComponent {
   private readonly router = inject(Router);
 
   email = '';
-  password = 'secret123'; // default para el demo
+  password = 'secret123'; // default for demo
   error = signal('');
 
   quickLogin(email: string) {
@@ -27,7 +27,7 @@ export class LoginComponent {
     this.error.set('');
     this.auth.login(this.email, this.password).subscribe({
       next: () => this.router.navigate(['/elements']),
-      error: () => this.error.set('Credenciales inválidas'),
+      error: () => this.error.set('Invalid credentials'),
     });
   }
 }
