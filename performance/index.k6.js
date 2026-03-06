@@ -1,12 +1,3 @@
-const TOKENS = {
-  admin:
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwibmFtZSI6IkJvYiIsInBlcm1pc3Npb25zIjpbImluc2VydDplbGVtZW50IiwidXBkYXRlOmVsZW1lbnQiLCJkZWxldGU6ZWxlbWVudCIsInJlYWQ6ZWxlbWVudCJdLCJpYXQiOjE3NzI3MjM0NjUsImV4cCI6MTc3Mjc1MjI2NX0.9O1Hy-lIF_zMvWnRTKPW_MOVzUladeVl1e9RD2z-ulo",
-  editor:
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwibmFtZSI6IkNoYXJsaWUiLCJwZXJtaXNzaW9ucyI6WyJpbnNlcnQ6ZWxlbWVudCIsInVwZGF0ZTplbGVtZW50IiwicmVhZDplbGVtZW50Il0sImlhdCI6MTc3MjcyMzQ4MywiZXhwIjoxNzcyNzUyMjgzfQ.qyoendjbwLArWzvFWfPjWpLFkDZa2A7_vao-28cmyMg",
-  viewer:
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwibmFtZSI6IkRhbmEiLCJwZXJtaXNzaW9ucyI6WyJyZWFkOmVsZW1lbnQiXSwiaWF0IjoxNzcyNzIzNDk5LCJleHAiOjE3NzI3NTIyOTl9.NvY8vk5QvAbipB2CDAV89w8CtYpKR6N8JwPzHS0a3jc",
-};
-
 import http from "k6/http";
 import { check, group, sleep } from "k6";
 import { Rate, Trend, Counter } from "k6/metrics";
@@ -17,13 +8,13 @@ const s200 = new Counter("status_200");
 const s403 = new Counter("status_403");
 const sOther = new Counter("status_other");
 
-// ───────────────────────────────────────────────
+const BASE = __ENV.BASE_URL || "http://127.0.0.1:3000";
 
-const BASE = "http://localhost:3000";
-const HEADERS = (role) => ({
-  Authorization: `Bearer ${TOKENS[role]}`,
-  "Content-Type": "application/json",
-});
+const CREDENTIALS = {
+  admin: { email: "bob@test.com", password: "secret123" },
+  editor: { email: "charlie@test.com", password: "secret123" },
+  viewer: { email: "dana@test.com", password: "secret123" },
+};
 
 export const options = {
   scenarios: {
@@ -31,17 +22,15 @@ export const options = {
       executor: "ramping-vus",
       startVUs: 0,
       stages: [
-        { duration: "15s", target: 20 }, // calentamiento
-        { duration: "30s", target: 50 }, // carga normal
-        { duration: "30s", target: 100 }, // presión
-        { duration: "30s", target: 200 }, // estrés
-        { duration: "15s", target: 0 }, // ramp down
+        { duration: "10s", target: 50 }, // fast ramp up
+        { duration: "40s", target: 200 }, // max pressure
+        { duration: "10s", target: 0 }, // ramp down
       ],
       tags: { scenario: "stress" },
     },
   },
   thresholds: {
-    guard_latency_ms: ["p(99)<500"], // más holgado bajo estrés
+    guard_latency_ms: ["p(99)<500"],
     forbidden_rate: ["rate<0.01"],
     http_req_failed: ["rate<0.01"],
     http_req_duration: ["p(95)<2000"],
@@ -49,26 +38,50 @@ export const options = {
 };
 
 export function setup() {
+  const tokens = {};
+
+  for (const [role, creds] of Object.entries(CREDENTIALS)) {
+    const res = http.post(`${BASE}/auth/login`, JSON.stringify(creds), {
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (res.status !== 200) {
+      throw new Error(`Login failed for ${role}: ${res.status} ${res.body}`);
+    }
+
+    tokens[role] = res.json("access_token");
+    console.log(`token obtained for ${role}`);
+  }
+
   const res = http.post(
     `${BASE}/elements`,
-    JSON.stringify({ name: "Fixture k6", description: "seed para el test" }),
-    { headers: HEADERS("admin") },
+    JSON.stringify({ name: "Fixture k6", description: "seed CI" }),
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${tokens.admin}`,
+      },
+    },
   );
 
   if (res.status !== 201) {
-    throw new Error(`setup falló: ${res.status} ${res.body}`);
+    throw new Error(`setup failed creating fixture: ${res.status} ${res.body}`);
   }
 
   const fixtureId = res.json("id");
-  console.log(`fixture creado con id: ${fixtureId}`);
-  return { fixtureId };
+  console.log(`fixture created: ${fixtureId}`);
+  return { tokens, fixtureId };
 }
 
 export default function (data) {
-  const { fixtureId } = data;
-
+  const { tokens, fixtureId } = data;
   const roles = ["admin", "editor", "viewer"];
   const role = roles[Math.floor(Math.random() * roles.length)];
+
+  const headers = {
+    Authorization: `Bearer ${tokens[role]}`,
+    "Content-Type": "application/json",
+  };
 
   const CASES = [
     {
@@ -94,7 +107,7 @@ export default function (data) {
       `${BASE}${cas.path}`,
       cas.body ?? null,
       {
-        headers: HEADERS(role),
+        headers,
         responseCallback: http.expectedStatuses(200, 201, 403),
       },
     );
@@ -106,13 +119,13 @@ export default function (data) {
 
     if (res.status !== expectedStatus) {
       console.warn(
-        `FALLO: ${role} ${cas.method} → got ${res.status} | error: ${res.error}`,
+        `FALLO: ${role} ${cas.method} → ${res.status} | ${res.error}`,
       );
     }
 
     check(res, {
       [`${role} → ${expectedStatus}`]: (r) => r.status === expectedStatus,
-      "sin error de red": (r) => r.status !== 0,
+      "no network error": (r) => r.status !== 0,
       "no privilege escalation": (r) =>
         !(role === "viewer" && cas.method !== "GET" && r.status !== 403),
     });
@@ -129,9 +142,12 @@ export default function (data) {
 
 export function teardown(data) {
   const res = http.del(`${BASE}/elements/${data.fixtureId}`, null, {
-    headers: HEADERS("admin"),
+    headers: {
+      Authorization: `Bearer ${data.tokens.admin}`,
+      "Content-Type": "application/json",
+    },
   });
-  console.log(`fixture eliminado — status: ${res.status}`);
+  console.log(`fixture deleted — status: ${res.status}`);
 }
 
 export function handleSummary(data) {
@@ -162,7 +178,7 @@ export function handleSummary(data) {
 ╠══════════════════════════════════════════╣
 ║  200 OK            : ${String(n200).padEnd(20)}║
 ║  403 Forbidden     : ${String(n403).padEnd(20)}║
-║  Otros (inesperado): ${String(nOther).padEnd(20)}║
+║  Other (unexpected) : ${String(nOther).padEnd(20)}║
 ╚══════════════════════════════════════════╝
     `,
   };

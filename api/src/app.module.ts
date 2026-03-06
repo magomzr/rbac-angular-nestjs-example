@@ -13,6 +13,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
 import { ElementsModule } from './modules/elements.module';
 import { ConfigModule } from '@nestjs/config';
+import { HealthController } from './controllers/health.controller';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ConfigModule } from '@nestjs/config';
     AuthModule,
     ElementsModule,
   ],
+  controllers: [HealthController],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
