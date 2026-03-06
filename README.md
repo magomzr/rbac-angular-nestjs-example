@@ -6,6 +6,12 @@
 
 Simple RBAC implementation using Angular and NestJS with permission strings
 
+Run with Podman using:
+
+```bash
+$ podman compose up --build
+```
+
 ## Load tests with k6
 
 ```bash

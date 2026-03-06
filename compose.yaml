@@ -1,0 +1,18 @@
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Containerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./api/.env
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Containerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
