@@ -1,49 +1,37 @@
 // The users service.
+// this is a very basic implementation, with data coming from a database.
 
-// this is a very simple in-memory implementation, but in a real app
-// this would come from a database, like a TypeORM or Prisma repo.
+// The getPermissions() method is used to get the permissions of a user,
+// and it returns an array of strings with those permissions.
 
 // Again, nothing fancy here.
 
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { eq } from 'drizzle-orm';
+import type { Db } from 'src/db';
+import { users, permissions, rolePermissions } from 'src/db/schema';
 import { Login } from 'src/entities/login';
-import { User } from 'src/entities/user';
 
 @Injectable()
 export class UsersService {
-  // En producción esto sería tu repositorio de TypeORM/Prisma
-  private readonly users: User[] = [
-    {
-      id: '1',
-      name: 'Bob',
-      email: 'bob@test.com',
-      password: bcrypt.hashSync('secret123', 10),
-      roles: ['admin'],
-    },
-    {
-      id: '2',
-      name: 'Charlie',
-      email: 'charlie@test.com',
-      password: bcrypt.hashSync('secret123', 10),
-      roles: ['editor'],
-    },
-    {
-      id: '3',
-      name: 'Dana',
-      email: 'dana@test.com',
-      password: bcrypt.hashSync('secret123', 10),
-      roles: ['viewer'],
-    },
-  ];
+  constructor(@Inject('DB') private readonly db: Db) {}
 
-  findByEmail(email: string): User | undefined {
-    return this.users.find((u) => u.email === email);
+  async findByEmail(email: string) {
+    return this.db.query.users.findFirst({ where: eq(users.email, email) });
   }
 
-  async validateCredentials(dto: Login): Promise<User> {
-    const user = this.findByEmail(dto.email);
+  async getPermissions(roleId: string): Promise<string[]> {
+    const rows = await this.db
+      .select({ name: permissions.name })
+      .from(rolePermissions)
+      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(eq(rolePermissions.roleId, roleId));
+    return rows.map((r) => r.name);
+  }
 
+  async validateCredentials(dto: Login) {
+    const user = await this.findByEmail(dto.email);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const match = await bcrypt.compare(dto.password, user.password);

@@ -1,84 +1,68 @@
-// The elements service. Of course, this is an in-memory implementation,
-// so if it's necessary to get data from a db, this is the place to get it.
+// The elements service, with data coming from the db.
 
 // Nothing special here, just the usual CRUD operations. The only thing is
 // that the `create()` method takes the `userId` as a param, and it comes
 // from the JWT token (request.user.sub) in the controller.
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import {
-  Element,
-  CreateElementDto,
-  UpdateElementDto,
-} from 'src/entities/element';
+import { eq } from 'drizzle-orm';
+import type { Db } from 'src/db';
+import { elements } from 'src/db/schema';
+import { CreateElementDto, UpdateElementDto } from 'src/entities/element';
 
 @Injectable()
 export class ElementsService {
-  private readonly elements: Element[] = [
-    {
-      id: '1',
-      name: 'Element Alpha',
-      description: 'First test element',
-      createdBy: '1',
-      status: 'published',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      id: '2',
-      name: 'Element Beta',
-      description: 'Second test element',
-      createdBy: '2',
-      status: 'draft',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ];
+  constructor(@Inject('DB') private readonly db: Db) {}
 
-  findAll(): Element[] {
-    return this.elements;
+  findAll() {
+    return this.db.select().from(elements);
   }
 
-  findOne(id: string): Element {
-    const element = this.elements.find((e) => e.id === id);
-    if (!element) throw new NotFoundException(`Element ${id} not found`);
-    return element;
+  async findOne(id: string) {
+    const row = await this.db.query.elements.findFirst({
+      where: eq(elements.id, id),
+    });
+    if (!row) throw new NotFoundException(`Element ${id} not found`);
+    return row;
   }
 
-  create(dto: CreateElementDto, userId: string): Element {
-    const element: Element = {
-      id: randomUUID(),
-      name: dto.name,
-      description: dto.description ?? '',
-      createdBy: userId,
-      status: 'draft',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.elements.push(element);
-    return element;
+  async create(dto: CreateElementDto, userId: string) {
+    const [row] = await this.db
+      .insert(elements)
+      .values({
+        id: randomUUID(),
+        name: dto.name,
+        description: dto.description ?? '',
+        createdBy: userId,
+      })
+      .returning();
+    return row;
   }
 
-  update(id: string, dto: UpdateElementDto): Element {
-    const element = this.findOne(id);
-    if (dto.name) element.name = dto.name;
-    if (dto.description) element.description = dto.description;
-    element.updatedAt = new Date();
-    return element;
+  async update(id: string, dto: UpdateElementDto) {
+    await this.findOne(id);
+    const [row] = await this.db
+      .update(elements)
+      .set({ ...dto, updatedAt: new Date() })
+      .where(eq(elements.id, id))
+      .returning();
+    return row;
   }
 
-  publish(id: string): Element {
-    const element = this.findOne(id);
-    element.status = 'published';
-    element.updatedAt = new Date();
-    return element;
+  async publish(id: string) {
+    await this.findOne(id);
+    const [row] = await this.db
+      .update(elements)
+      .set({ status: 'published', updatedAt: new Date() })
+      .where(eq(elements.id, id))
+      .returning();
+    return row;
   }
 
-  remove(id: string): { deleted: boolean; id: string } {
-    const index = this.elements.findIndex((e) => e.id === id);
-    if (index === -1) throw new NotFoundException(`Element ${id} not found`);
-    this.elements.splice(index, 1);
+  async remove(id: string) {
+    await this.findOne(id);
+    await this.db.delete(elements).where(eq(elements.id, id));
     return { deleted: true, id };
   }
 }

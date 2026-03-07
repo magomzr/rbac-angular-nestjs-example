@@ -13,6 +13,20 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
 
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: rbac
+          POSTGRES_USER: rbac
+          POSTGRES_PASSWORD: rbac
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,10 +49,19 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm build
 
+      - name: Migrate & seed
+        working-directory: api
+        env:
+          DATABASE_URL: postgresql://rbac:rbac@localhost:5432/rbac
+        run: |
+          npx drizzle-kit push
+          npx ts-node -r tsconfig-paths/register src/db/seed.ts
+
       - name: Start API
         working-directory: api
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          DATABASE_URL: postgresql://rbac:rbac@localhost:5432/rbac
           NODE_ENV: test
         run: node dist/main &
 
@@ -57,7 +80,6 @@ jobs:
         uses: grafana/run-k6-action@v1
         with:
           path: performance/index.k6.js
-          # setup() hace el login internamente — no se pasan tokens
           flags: --env BASE_URL=http://localhost:3000
 
       - name: Upload summary
