@@ -1,4 +1,19 @@
 services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: rbac
+      POSTGRES_USER: rbac
+      POSTGRES_PASSWORD: rbac
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rbac"]
+      interval: 5s
+      retries: 5
+
   api:
     build:
       context: ./api
@@ -7,6 +22,9 @@ services:
       - "3000:3000"
     env_file:
       - ./api/.env
+    depends_on:
+      db:
+        condition: service_healthy
 
   web:
     build:
@@ -16,3 +34,6 @@ services:
       - "8080:80"
     depends_on:
       - api
+
+volumes:
+  pgdata:

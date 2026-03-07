@@ -17,6 +17,7 @@ const CREDENTIALS = {
 };
 
 export const options = {
+  summaryTrendStats: ["avg", "min", "med", "max", "p(90)", "p(95)", "p(99)"],
   scenarios: {
     stress: {
       executor: "ramping-vus",
@@ -152,7 +153,8 @@ export function teardown(data) {
 
 export function handleSummary(data) {
   const forbidden = data.metrics.forbidden_rate?.values;
-  const latencyP99 = data.metrics.guard_latency_ms?.values?.["p(99)"] ?? 0;
+  const latencyValues = data.metrics.guard_latency_ms?.values ?? {};
+  const latencyP99 = latencyValues["p(99)"] ?? latencyValues["p99"] ?? 0;
   const latencyP95 = data.metrics.guard_latency_ms?.values?.["p(95)"] ?? 0;
   const latencyAvg = data.metrics.guard_latency_ms?.values?.["avg"] ?? 0;
   const totalReqs = data.metrics.http_reqs?.values?.count ?? 0;

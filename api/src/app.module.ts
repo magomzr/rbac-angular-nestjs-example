@@ -14,10 +14,12 @@ import { PermissionsGuard } from './guards/permissions.guard';
 import { ElementsModule } from './modules/elements.module';
 import { ConfigModule } from '@nestjs/config';
 import { HealthController } from './controllers/health.controller';
+import { DbModule } from './modules/db.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    DbModule,
     AuthModule,
     ElementsModule,
   ],
