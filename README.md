@@ -16,7 +16,7 @@ $ podman compose up --build
 
 ```bash
 1 scenario, 200 max VUs, 1m30s max duration (incl. graceful stop):
-Up to 200 looping VUs for 1m0s over 3 stages (gracefulRampDown: 30s, gracefulStop: 30s).
+Up to 200 looping VUs, 1m0s over 3 stages (gracefulRampDown: 30s, gracefulStop: 30s).
 
 ╔══════════════════════════════════════════╗
 ║          RBAC Stress Test Summary        ║
