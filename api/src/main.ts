@@ -1,6 +1,7 @@
 // This is where the app starts. The reason we have a new ValidationPipe here is
-// to activate class-validator in all our DTOs automatically. The whitelist property
-// is to strip out any properties that are not defined in DTOs, for security.
+// to activate class-validator in all our DTOs automatically. The whitelist
+// property is to strip out any properties that are not defined in DTOs, for
+// security.
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';

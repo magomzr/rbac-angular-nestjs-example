@@ -1,6 +1,6 @@
-// These are just two simple guards to protect routes.
-// the authGuard checks if the user is logged in, and the
-// permissionGuard checks if the user has a specific permission.
+// These are just two simple guards to protect routes. the authGuard checks if
+// the user is logged in, and the permissionGuard checks if the user has a
+// specific permission.
 
 // Nothing special here.
 

@@ -1,8 +1,8 @@
-// The users service.
-// this is a very basic implementation, with data coming from a database.
+// The users service. this is a very basic implementation, with data coming from
+// a database.
 
-// The getPermissions() method is used to get the permissions of a user,
-// and it returns an array of strings with those permissions.
+// The getPermissions() method is used to get the permissions of a user, and it
+// returns an array of strings with those permissions.
 
 // Again, nothing fancy here.
 

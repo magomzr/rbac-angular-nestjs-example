@@ -2,12 +2,12 @@
 
 // Here, we have a login() method and a getPermissions() call.
 
-// First, the login() receives the login credentials and validates them
-// with UsersService (another scope). Then, we extract the user's roles
-// and resolve them to permissions (can be more than one).
+// First, the login() receives the login credentials and validates them with
+// UsersService (another scope). Then, we extract the user's roles and resolve
+// them to permissions (can be more than one).
 
-// The frontend will never see the roles, only the permissions, that's why
-// we need to resolve them here and pass them in the JWT payload.
+// The frontend will never see the roles, only the permissions, that's why we
+// need to resolve them here and pass them in the JWT payload.
 
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
