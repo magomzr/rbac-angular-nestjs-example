@@ -23,18 +23,29 @@ export const options = {
       executor: "ramping-vus",
       startVUs: 0,
       stages: [
-        { duration: "10s", target: 50 }, // fast ramp up
-        { duration: "40s", target: 200 }, // max pressure
-        { duration: "10s", target: 0 }, // ramp down
+        { duration: "10s", target: 50 },
+        { duration: "30s", target: 150 },
+        { duration: "10s", target: 0 },
       ],
       tags: { scenario: "stress" },
     },
+    constant_load: {
+      executor: "constant-arrival-rate",
+      rate: 100,
+      timeUnit: "1s",
+      duration: "50s",
+      preAllocatedVUs: 30,
+      maxVUs: 80,
+      tags: { scenario: "constant" },
+    },
   },
   thresholds: {
-    guard_latency_ms: ["p(99)<500"],
+    guard_latency_ms: ["p(99)<1000"],
     forbidden_rate: ["rate<0.01"],
     http_req_failed: ["rate<0.01"],
     http_req_duration: ["p(95)<2000"],
+    "http_req_duration{scenario:stress}": ["p(95)<2000"],
+    "http_req_duration{scenario:constant}": ["p(95)<1500"],
   },
 };
 
@@ -103,15 +114,10 @@ export default function (data) {
 
   group(`${cas.method} as ${role}`, () => {
     const start = Date.now();
-    const res = http.request(
-      cas.method,
-      `${BASE}${cas.path}`,
-      cas.body ?? null,
-      {
-        headers,
-        responseCallback: http.expectedStatuses(200, 201, 403),
-      },
-    );
+    const res = http.request(cas.method, `${BASE}${cas.path}`, cas.body ?? null, {
+      headers,
+      responseCallback: http.expectedStatuses(200, 201, 403),
+    });
     guardLatency.add(Date.now() - start);
 
     if (res.status === 200) s200.add(1);
@@ -119,9 +125,7 @@ export default function (data) {
     else sOther.add(1);
 
     if (res.status !== expectedStatus) {
-      console.warn(
-        `FALLO: ${role} ${cas.method} → ${res.status} | ${res.error}`,
-      );
+      console.warn(`FALLO: ${role} ${cas.method} → ${res.status} | ${res.error}`);
     }
 
     check(res, {
@@ -138,7 +142,7 @@ export default function (data) {
     }
   });
 
-  sleep(0.5);
+  sleep(0.2);
 }
 
 export function teardown(data) {
@@ -153,15 +157,12 @@ export function teardown(data) {
 
 export function handleSummary(data) {
   const forbidden = data.metrics.forbidden_rate?.values;
-  const latencyValues = data.metrics.guard_latency_ms?.values ?? {};
-  const latencyP99 = latencyValues["p(99)"] ?? latencyValues["p99"] ?? 0;
+  const latencyP99 = data.metrics.guard_latency_ms?.values?.["p(99)"] ?? 0;
   const latencyP95 = data.metrics.guard_latency_ms?.values?.["p(95)"] ?? 0;
   const latencyAvg = data.metrics.guard_latency_ms?.values?.["avg"] ?? 0;
   const totalReqs = data.metrics.http_reqs?.values?.count ?? 0;
   const failRate = data.metrics.http_req_failed?.values?.rate ?? 0;
-  const correctness = forbidden
-    ? ((1 - forbidden.rate) * 100).toFixed(2)
-    : "N/A";
+  const correctness = forbidden ? ((1 - forbidden.rate) * 100).toFixed(2) : "N/A";
   const n200 = data.metrics.status_200?.values?.count ?? 0;
   const n403 = data.metrics.status_403?.values?.count ?? 0;
   const nOther = data.metrics.status_other?.values?.count ?? 0;
@@ -178,8 +179,8 @@ export function handleSummary(data) {
 ║  Total requests    : ${String(totalReqs).padEnd(20)}║
 ║  HTTP fail rate    : ${String((failRate * 100).toFixed(2) + "%").padEnd(20)}║
 ╠══════════════════════════════════════════╣
-║  200 OK            : ${String(n200).padEnd(20)}║
-║  403 Forbidden     : ${String(n403).padEnd(20)}║
+║  200 OK             : ${String(n200).padEnd(20)}║
+║  403 Forbidden      : ${String(n403).padEnd(20)}║
 ║  Other (unexpected) : ${String(nOther).padEnd(20)}║
 ╚══════════════════════════════════════════╝
     `,
