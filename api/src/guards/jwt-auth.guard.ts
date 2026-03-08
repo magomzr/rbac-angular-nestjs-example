@@ -1,6 +1,6 @@
-// This guard extends the default AuthGuard provided by @nestjs/passport.
-// It checks if the endpoint is public with the @Public() decorator, and,
-// if so, it allows access without checking for a JWT.
+// This guard extends the default AuthGuard provided by @nestjs/passport. It
+// checks if the endpoint is public with the @Public() decorator, and, if so, it
+// allows access without checking for a JWT.
 
 // If not, it delegates the authentication process to the default JWT strategy
 // defined in passport-jwt (the super.canActivate(ctx) call).

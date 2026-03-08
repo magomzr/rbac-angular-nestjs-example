@@ -1,12 +1,15 @@
-// This component is the main page of the app. The special part here is that it uses the CanDirective
-// to show or hide buttons based on the user's permissions. It's as simple as adding
-// *appCan="'permission_name'" to any element.
+// This component is the main page of the app. The special part here is that it
+// uses the CanDirective to show or hide buttons based on the user's
+// permissions. It's as simple as adding *appCan="'permission_name'" to any
+// element.
 
 // For instance, the "New" button is written like this:
-// <button *appCan="'insert:element'" class="btn green" (click)="create()">+ New</button>
+// <button *appCan="'insert:element'" class="btn green" (click)="create()">+
+// New</button>
 
-// This way, any UI object can be protected with the appropiate permission and following any
-// rules previously defined in the backend and sent through the token.
+// This way, any UI object can be protected with the appropiate permission and
+// following any rules previously defined in the backend and sent through the
+// token.
 
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';

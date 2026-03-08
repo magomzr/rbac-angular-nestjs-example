@@ -1,8 +1,8 @@
 // The elements service, with data coming from the db.
 
-// Nothing special here, just the usual CRUD operations. The only thing is
-// that the `create()` method takes the `userId` as a param, and it comes
-// from the JWT token (request.user.sub) in the controller.
+// Nothing special here, just the usual CRUD operations. The only thing is that
+// the `create()` method takes the `userId` as a param, and it comes from the
+// JWT token (request.user.sub) in the controller.
 
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
