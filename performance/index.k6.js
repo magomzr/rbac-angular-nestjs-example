@@ -161,7 +161,11 @@ export function handleSummary(data) {
   const latencyP95 = data.metrics.guard_latency_ms?.values?.["p(95)"] ?? 0;
   const latencyAvg = data.metrics.guard_latency_ms?.values?.["avg"] ?? 0;
   const totalReqs = data.metrics.http_reqs?.values?.count ?? 0;
+  const throughput = data.metrics.http_reqs?.values?.rate ?? 0;
   const failRate = data.metrics.http_req_failed?.values?.rate ?? 0;
+  const checksTotal = data.metrics.checks?.values?.passes ?? 0;
+  const checksFailed = data.metrics.checks?.values?.fails ?? 0;
+  const iterations = data.metrics.iterations?.values?.count ?? 0;
   const correctness = forbidden ? ((1 - forbidden.rate) * 100).toFixed(2) : "N/A";
   const n200 = data.metrics.status_200?.values?.count ?? 0;
   const n403 = data.metrics.status_403?.values?.count ?? 0;
@@ -169,20 +173,24 @@ export function handleSummary(data) {
 
   return {
     stdout: `
-╔══════════════════════════════════════════╗
-║          RBAC Stress Test Summary        ║
-╠══════════════════════════════════════════╣
-║  Guard correctness : ${String(correctness + "%").padEnd(20)}║
-║  Guard avg latency : ${String(latencyAvg.toFixed(2) + "ms").padEnd(20)}║
-║  Guard p95 latency : ${String(latencyP95.toFixed(2) + "ms").padEnd(20)}║
-║  Guard p99 latency : ${String(latencyP99.toFixed(2) + "ms").padEnd(20)}║
-║  Total requests    : ${String(totalReqs).padEnd(20)}║
-║  HTTP fail rate    : ${String((failRate * 100).toFixed(2) + "%").padEnd(20)}║
-╠══════════════════════════════════════════╣
-║  200 OK             : ${String(n200).padEnd(20)}║
-║  403 Forbidden      : ${String(n403).padEnd(20)}║
-║  Other (unexpected) : ${String(nOther).padEnd(20)}║
-╚══════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════╗
+║              RBAC Stress Test Summary                ║
+╠══════════════════╦═══════════════════════════════════╣
+║  SECURITY        ║  PERFORMANCE                      ║
+║  Correctness     ║  Avg latency  : ${String(latencyAvg.toFixed(2) + "ms").padEnd(18)}║
+║  ${String(correctness + "%").padEnd(16)}║  p95 latency  : ${String(latencyP95.toFixed(2) + "ms").padEnd(18)}║
+║                  ║  p99 latency  : ${String(latencyP99.toFixed(2) + "ms").padEnd(18)}║
+║                  ║                                   ║
+║                  ║  Avg throughput: ${String(throughput.toFixed(2) + " req/s").padEnd(17)}║
+╠══════════════════╩═══════════════════════════════════╣
+║  REQUESTS                                            ║
+║  Total      : ${String(totalReqs).padEnd(12)} Fail rate : ${String((failRate * 100).toFixed(2) + "%").padEnd(11)}║
+║  200 OK     : ${String(n200).padEnd(12)} 403 Forb. : ${String(n403).padEnd(11)}║
+║  Iterations : ${String(iterations).padEnd(12)} Other     : ${String(nOther).padEnd(11)}║
+╠══════════════════════════════════════════════════════╣
+║  CHECKS                                              ║
+║  Passed : ${String(checksTotal).padEnd(14)} Failed : ${String(checksFailed).padEnd(18)}║
+╚══════════════════════════════════════════════════════╝
     `,
   };
 }
