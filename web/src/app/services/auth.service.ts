@@ -26,7 +26,15 @@ export class AuthService {
 
   login(email: string, password: string) {
     return this.http
-      .post<{ access_token: string }>(`${this.API}/auth/login`, { email, password })
+      .post<{
+        access_token: string;
+      }>(`${this.API}/auth/login`, { email, password }, { withCredentials: true })
+      .pipe(tap((res) => this.setToken(res.access_token)));
+  }
+
+  refreshToken() {
+    return this.http
+      .post<{ access_token: string }>(`${this.API}/auth/refresh`, {}, { withCredentials: true })
       .pipe(tap((res) => this.setToken(res.access_token)));
   }
 

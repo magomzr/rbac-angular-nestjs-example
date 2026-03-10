@@ -17,6 +17,10 @@ import { Login } from 'src/entities/login';
 export class UsersService {
   constructor(@Inject('DB') private readonly db: Db) {}
 
+  async findById(id: string) {
+    return this.db.query.users.findFirst({ where: eq(users.id, id) });
+  }
+
   async findByEmail(email: string) {
     return this.db.query.users.findFirst({ where: eq(users.email, email) });
   }

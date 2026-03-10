@@ -32,19 +32,19 @@ adds extra steps to check access.
 ║              RBAC Stress Test Summary                ║
 ╠══════════════════╦═══════════════════════════════════╣
 ║  SECURITY        ║  PERFORMANCE                      ║
-║  Correctness     ║  Avg latency  : 3.32ms            ║
-║  100.00%         ║  p95 latency  : 8.00ms            ║
-║                  ║  p99 latency  : 14.00ms           ║
+║  Correctness     ║  Avg latency  : 2.46ms            ║
+║  100.00%         ║  p95 latency  : 5.00ms            ║
+║                  ║  p99 latency  : 9.00ms            ║
 ║                  ║                                   ║
-║                  ║  Avg throughput: 489.01 req/s     ║
+║                  ║  Avg throughput: 490.61 req/s     ║
 ╠══════════════════╩═══════════════════════════════════╣
 ║  REQUESTS                                            ║
-║  Total      : 24640        Fail rate : 0.00%         ║
-║  200 OK     : 20604        403 Forb. : 4031          ║
-║  Iterations : 24635        Other     : 0             ║
+║  Total      : 24731        Fail rate : 0.00%         ║
+║  200 OK     : 20747        403 Forb. : 3979          ║
+║  Iterations : 24726        Other     : 0             ║
 ╠══════════════════════════════════════════════════════╣
 ║  CHECKS                                              ║
-║  Passed : 73905          Failed : 0                  ║
+║  Passed : 74178          Failed : 0                  ║
 ╚══════════════════════════════════════════════════════╝
 ```
 
