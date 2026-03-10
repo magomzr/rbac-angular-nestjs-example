@@ -9,7 +9,7 @@
 // The frontend will never see the roles, only the permissions, that's why we
 // need to resolve them here and pass them in the JWT payload.
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from './users.service';
 import { Login } from 'src/entities/login';
@@ -25,11 +25,29 @@ export class AuthService {
     const user = await this.users.validateCredentials(dto);
     const permissions = await this.users.getPermissions(user.roleId);
     return {
-      access_token: this.jwt.sign({
-        sub: user.id,
-        name: user.name,
-        permissions,
-      }),
+      access_token: this.jwt.sign(
+        { sub: user.id, name: user.name, permissions },
+        { expiresIn: '15m' },
+      ),
+      refresh_token: this.jwt.sign({ sub: user.id }, { expiresIn: '7d' }),
+    };
+  }
+
+  async refresh(refreshToken: string) {
+    let payload: { sub: string };
+    try {
+      payload = this.jwt.verify(refreshToken);
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+    const user = await this.users.findById(payload.sub);
+    if (!user) throw new UnauthorizedException('User not found');
+    const permissions = await this.users.getPermissions(user.roleId);
+    return {
+      access_token: this.jwt.sign(
+        { sub: user.id, name: user.name, permissions },
+        { expiresIn: '15m' },
+      ),
     };
   }
 }
