@@ -51,5 +51,6 @@ adds extra steps to check access.
 **Notes**: These numbers reflect the **full req workload** (with JWT
 verification, RBAC guard, and the PostgreSQL query), not just the permission
 check in isolation. Latency may vary depending on Node.js concurrency overhead
-and database connection pool availability. The p99 spike at 500 VUs is
-attributable to connection pool pressure on Postgres, not the RBAC logic itself.
+and database connection pool availability and pressure. These results were
+executed in a MacBook Pro with Apple M3 Pro and 36 GB RAM. GitHub Actions
+performance results may vary a lot since computation resources are different.
