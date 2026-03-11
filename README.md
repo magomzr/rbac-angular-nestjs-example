@@ -24,31 +24,32 @@ without additional latency, in a standardized way, and avoiding any logic that
 adds extra steps to check access.
 
 ```bash
-2 scenarios, 230 max VUs, 1m20s max duration (incl. graceful stop):
-* stress: Up to 150 looping VUs for 50s over 3 stages (gracefulRampDown: 30s, gracefulStop: 30s)
-* constant_load: 100.00 iterations/s for 50s (maxVUs: 30-80, gracefulStop: 30s)
+2 scenarios, 650 max VUs, 1m20s max duration (incl. graceful stop):
+* stress: Up to 500 looping VUs for 50s over 3 stages (gracefulRampDown: 30s, gracefulStop: 30s)
+* constant_load: 200.00 iterations/s for 50s (maxVUs: 80-150, gracefulStop: 30s)
 
 ╔══════════════════════════════════════════════════════╗
 ║              RBAC Stress Test Summary                ║
 ╠══════════════════╦═══════════════════════════════════╣
 ║  SECURITY        ║  PERFORMANCE                      ║
-║  Correctness     ║  Avg latency  : 2.46ms            ║
-║  100.00%         ║  p95 latency  : 5.00ms            ║
-║                  ║  p99 latency  : 9.00ms            ║
+║  Correctness     ║  Avg latency  : 2.48ms            ║
+║  100.00%         ║  p95 latency  : 8.00ms            ║
+║                  ║  p99 latency  : 18.00ms           ║
 ║                  ║                                   ║
-║                  ║  Avg throughput: 490.61 req/s     ║
+║                  ║  Avg throughput: 1279.07 req/s    ║
 ╠══════════════════╩═══════════════════════════════════╣
 ║  REQUESTS                                            ║
-║  Total      : 24731        Fail rate : 0.00%         ║
-║  200 OK     : 20747        403 Forb. : 3979          ║
-║  Iterations : 24726        Other     : 0             ║
+║  Total      : 64432        Fail rate : 0.00%         ║
+║  200 OK     : 53574        403 Forb. : 10853         ║
+║  Iterations : 64427        Other     : 0             ║
 ╠══════════════════════════════════════════════════════╣
 ║  CHECKS                                              ║
-║  Passed : 74178          Failed : 0                  ║
+║  Passed : 193281         Failed : 0                  ║
 ╚══════════════════════════════════════════════════════╝
 ```
 
 **Notes**: These numbers reflect the **full req workload** (with JWT
 verification, RBAC guard, and the PostgreSQL query), not just the permission
 check in isolation. Latency may vary depending on Node.js concurrency overhead
-and database connection pool availability.
+and database connection pool availability. The p99 spike at 500 VUs is
+attributable to connection pool pressure on Postgres, not the RBAC logic itself.
