@@ -28,6 +28,7 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -35,6 +36,8 @@ import { PERMISSIONS_KEY } from 'src/decorators/permissions.decorator';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
+  private readonly logger = new Logger(PermissionsGuard.name);
+
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(ctx: ExecutionContext): boolean {
@@ -45,13 +48,25 @@ export class PermissionsGuard implements CanActivate {
 
     if (!required?.length) return true;
 
-    const { user } = ctx.switchToHttp().getRequest();
+    const { user, method, url } = ctx.switchToHttp().getRequest();
     const permSet: Set<string> = user?.permissionSet;
 
     if (!permSet) throw new UnauthorizedException();
 
     const hasAll = required.every((p) => permSet.has(p));
-    if (!hasAll) throw new ForbiddenException();
+
+    if (!hasAll) {
+      const missing = required.filter((p) => !permSet.has(p));
+      this.logger.warn({
+        msg: 'permission denied',
+        userId: user.sub,
+        required,
+        missing,
+        method,
+        path: url,
+      });
+      throw new ForbiddenException();
+    }
 
     return true;
   }

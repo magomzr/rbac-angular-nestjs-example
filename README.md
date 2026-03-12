@@ -54,3 +54,31 @@ check in isolation. Latency may vary depending on Node.js concurrency overhead
 and database connection pool availability and pressure. These results were
 executed in a MacBook Pro with Apple M3 Pro and 36 GB RAM. GitHub Actions
 performance results may vary a lot since computation resources are different.
+
+### Observability
+
+With Loki + Grafana included in the stack, the cost per req increases in time,
+showing the effects of adding observability. However, under realistic
+conditions, these services will run in different machine without competing for
+computing resources. I'm still happy with these results.
+
+```bash
+╔══════════════════════════════════════════════════════╗
+║              RBAC Stress Test Summary                ║
+╠══════════════════╦═══════════════════════════════════╣
+║  SECURITY        ║  PERFORMANCE                      ║
+║  Correctness     ║  Avg latency  : 7.73ms            ║
+║  100.00%         ║  p95 latency  : 34.00ms           ║
+║                  ║  p99 latency  : 65.00ms           ║
+║                  ║                                   ║
+║                  ║  Avg throughput: 1247.40 req/s    ║
+╠══════════════════╩═══════════════════════════════════╣
+║  REQUESTS                                            ║
+║  Total      : 62946        Fail rate : 0.00%         ║
+║  200 OK     : 52477        403 Forb. : 10464         ║
+║  Iterations : 62941        Other     : 0             ║
+╠══════════════════════════════════════════════════════╣
+║  CHECKS                                              ║
+║  Passed : 188823         Failed : 0                  ║
+╚══════════════════════════════════════════════════════╝
+```
